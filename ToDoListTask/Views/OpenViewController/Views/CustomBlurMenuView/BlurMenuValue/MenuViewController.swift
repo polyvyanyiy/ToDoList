@@ -71,20 +71,20 @@ private extension MenuViewController {
         }
         
         // Создаем кнопки меню
-        let editButton = createMenuButton(title: "Редактировать", image: "pencil", color: .black)
-        let shareButton = createMenuButton(title: "Поделиться", image: "square.and.arrow.up", color: .black)
-        let deleteButton = createMenuButton(title: "Удалить", image: "trash", color: .systemRed)
+        let editButton = createMenuButton(title: "Редактировать", image: R.EditTaskMenuView.image.editMenu, color: .black)
+        let shareButton = createMenuButton(title: "Поделиться", image: R.EditTaskMenuView.image.exportMenu, color: .black)
+        let deleteButton = createMenuButton(title: "Удалить", image: R.EditTaskMenuView.image.delMenu, color: .systemRed)
         
         menuStackView.addArrangedSubview(editButton)
         menuStackView.addArrangedSubview(shareButton)
         menuStackView.addArrangedSubview(deleteButton)
     }
     
-    func createMenuButton(title: String, image: String, color: UIColor) -> UIButton {
+    func createMenuButton(title: String, image: UIImage?, color: UIColor) -> UIButton {
         var config = UIButton.Configuration.filled()
         config.title = title
         config.background.cornerRadius = 0
-        config.image = UIImage(systemName: image)
+        config.image = image
         config.imagePlacement = .trailing
         config.baseForegroundColor = color
         config.baseBackgroundColor = R.TableView.Color.borderFonMain

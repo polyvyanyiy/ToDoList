@@ -65,6 +65,18 @@ enum R {
         
         enum image {}
     }
-
+    
+    enum EditTaskMenuView {
+        
+        enum Color {}
+        
+        enum String {}
+        
+        enum image {
+            static let editMenu = UIImage(named: "editMenu")
+            static let delMenu = UIImage(named: "delMenu")
+            static let exportMenu = UIImage(named: "exportMenu")
+        }
+    }
 }
 
