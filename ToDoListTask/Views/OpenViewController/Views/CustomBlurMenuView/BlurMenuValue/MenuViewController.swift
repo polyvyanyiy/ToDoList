@@ -62,19 +62,6 @@ private extension MenuViewController {
             make.width.equalTo(presenter.targetCellFrame.width - 40)
         }
         
-//        // Добавляем копию ячейки ПОВЕРХ размытия
-//        if let editView = customEditView {
-//            view.addSubview(editView)
-//            
-//            editView.snp.makeConstraints { make in
-//                make.top.equalToSuperview().offset(targetCellFrame.minY)
-//                make.centerX.equalToSuperview()
-//                // Делаем меньше ячейку в ширину при нажатие
-//                make.width.equalTo(targetCellFrame.width - 40)
-//                make.height.equalTo(targetCellFrame.height)
-//            }
-//        }
-        
         view.addSubview(menuStackView)
         menuStackView.layer.cornerRadius = 12
         menuStackView.snp.makeConstraints { make in
@@ -82,17 +69,6 @@ private extension MenuViewController {
             make.centerX.equalTo(taskCardView.snp.centerX)
             make.width.equalTo(250)
         }
-        
-//        menuStackView.snp.makeConstraints { make in
-//            if let editView = customEditView {
-//                // Привязываем меню под ячейку
-//                make.top.equalTo(editView.snp.bottom).offset(12)
-//                make.centerX.equalTo(editView.snp.centerX)
-//            } else {
-//                make.center.equalToSuperview()
-//            }
-//            make.width.equalTo(250)
-//        }
         
         // Создаем кнопки меню
         let editButton = createMenuButton(title: "Редактировать", image: "pencil", color: .black)
