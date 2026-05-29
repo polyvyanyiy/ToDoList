@@ -136,25 +136,44 @@ extension ViewBuilder {
     }
     
     // удаление ячейки
-    func deleteCell(for task: TodoTask) {
-        guard let rowIndex = filteredItems.firstIndex(where: { $0.objectID == task.objectID }) else { return }
-        let indexPath = IndexPath(row: rowIndex, section: 0)
-        
-        filteredItems.remove(at: rowIndex)
-        
-        if let originalIndex = todoItems.firstIndex(where: { $0.objectID == task.objectID }) {
-            // обход didSet
-            todoItems.remove(at: originalIndex)
+    func deleteCell(for task: TodoTask, isDelMenu: Bool? = false) {
+        // Ищем актуальный индекс
+        guard let rowIndex = filteredItems.firstIndex(where: { $0.objectID == task.objectID }) else {
+            // Если элемента нет в filteredItems (например, поиск его уже скрыл), просто убираем его из основного массива без анимации таблицы
+            if let originalIndex = todoItems.firstIndex(where: { $0.objectID == task.objectID }) {
+                let currentFiltered = filteredItems
+                todoItems.remove(at: originalIndex)
+                filteredItems = currentFiltered
+            }
+            tableView.reloadData()
+            return
         }
         
-        // Стандартный и безопасный метод удаления для свайпов
+        let indexPath = IndexPath(row: rowIndex, section: 0)
+        
+        // Локально сохраняем то, каким должен быть filteredItems после удаления ячейки
+        var updatedFiltered = filteredItems
+        updatedFiltered.remove(at: rowIndex)
+        
+        // Удаляем элемент из основного массива todoItems.
+        // Так как сработает didSet { filteredItems = todoItems }, мы ПОСЛЕ этого принудительно возвращаем наш правильный, отфильтрованный массив.
+        if let originalIndex = todoItems.firstIndex(where: { $0.objectID == task.objectID }) {
+            todoItems.remove(at: originalIndex) // Сработал didSet
+        }
+        
+        // Возвращаем верное состояние фильтра (с учетом удаления) перед анимацией
+        filteredItems = updatedFiltered
+        
+        // 4. Синхронно и безопасно анимируем удаление строки
         tableView.performBatchUpdates({
             tableView.deleteRows(at: [indexPath], with: .fade)
         }, completion: { [weak self] _ in
             guard let self = self else { return }
+            // Обновляем счетчик задач внизу экрана
             self.botView.configure(with: self.todoItems.count)
         })
     }
+
     
     // Обновление ячейки
     func reloadRow(at indexPath: IndexPath) {

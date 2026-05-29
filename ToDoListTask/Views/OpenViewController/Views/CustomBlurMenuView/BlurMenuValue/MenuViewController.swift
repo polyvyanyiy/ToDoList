@@ -9,20 +9,12 @@ import UIKit
 import SnapKit
 
 final class MenuViewController: UIViewController {
+
+    private let presenter: TaskMenuPresenter
+    private let taskCardView = EditTaskView()
     
-    // Замыкания для передачи действий
-    var onEdit: (() -> Void)?
-    var onShare: (() -> Void)?
-    var onDelete: (() -> Void)?
-    
-    // Свойства для хранения ячейки
-    var customEditView: UIView?
-    var targetCellFrame: CGRect = .zero
-    
-    // Вью размытия
     private let blurEffectView = UIVisualEffectView(effect: UIBlurEffect(style: .systemChromeMaterialDark))
     
-    // Контейнер для кнопок меню
     private let menuStackView: UIStackView = {
         let stack = UIStackView()
         stack.axis = .vertical
@@ -32,11 +24,22 @@ final class MenuViewController: UIViewController {
         return stack
     }()
     
+    // Внедряем зависимость через инициализатор (Принцип Router/Assembly)
+    init(presenter: TaskMenuPresenter) {
+        self.presenter = presenter
+        super.init(nibName: nil, bundle: nil)
+    }
+    
+    required init?(coder: NSCoder) { fatalError() }
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .clear
         setupViews()
         setupActions()
+        
+        // Настраиваем карточку задачи данными из Презентера
+        taskCardView.configure(with: presenter.taskModel)
     }
 }
 
@@ -51,32 +54,45 @@ private extension MenuViewController {
             make.edges.equalToSuperview()
         }
         
-        // Добавляем копию ячейки ПОВЕРХ размытия
-        if let editView = customEditView {
-            view.addSubview(editView)
-            
-            editView.snp.makeConstraints { make in
-                make.top.equalToSuperview().offset(targetCellFrame.minY)
-                make.centerX.equalToSuperview()
-                // Делаем меньше ячейку в ширину при нажатие
-                make.width.equalTo(targetCellFrame.width - 40)
-                make.height.equalTo(targetCellFrame.height)
-            }
+        // Размещаем карточку задачи поверх размытия
+        view.addSubview(taskCardView)
+        taskCardView.snp.makeConstraints { make in
+            make.top.equalToSuperview().offset(presenter.targetCellFrame.minY)
+            make.centerX.equalToSuperview()
+            make.width.equalTo(presenter.targetCellFrame.width - 40)
         }
+        
+//        // Добавляем копию ячейки ПОВЕРХ размытия
+//        if let editView = customEditView {
+//            view.addSubview(editView)
+//            
+//            editView.snp.makeConstraints { make in
+//                make.top.equalToSuperview().offset(targetCellFrame.minY)
+//                make.centerX.equalToSuperview()
+//                // Делаем меньше ячейку в ширину при нажатие
+//                make.width.equalTo(targetCellFrame.width - 40)
+//                make.height.equalTo(targetCellFrame.height)
+//            }
+//        }
         
         view.addSubview(menuStackView)
         menuStackView.layer.cornerRadius = 12
-        
         menuStackView.snp.makeConstraints { make in
-            if let editView = customEditView {
-                // Привязываем меню под ячейку
-                make.top.equalTo(editView.snp.bottom).offset(12)
-                make.centerX.equalTo(editView.snp.centerX)
-            } else {
-                make.center.equalToSuperview()
-            }
+            make.top.equalTo(taskCardView.snp.bottom).offset(12)
+            make.centerX.equalTo(taskCardView.snp.centerX)
             make.width.equalTo(250)
         }
+        
+//        menuStackView.snp.makeConstraints { make in
+//            if let editView = customEditView {
+//                // Привязываем меню под ячейку
+//                make.top.equalTo(editView.snp.bottom).offset(12)
+//                make.centerX.equalTo(editView.snp.centerX)
+//            } else {
+//                make.center.equalToSuperview()
+//            }
+//            make.width.equalTo(250)
+//        }
         
         // Создаем кнопки меню
         let editButton = createMenuButton(title: "Редактировать", image: "pencil", color: .black)
@@ -119,13 +135,13 @@ private extension MenuViewController {
         
         // Действия
         if let editBtn = menuStackView.arrangedSubviews[0] as? UIButton {
-            editBtn.addAction(UIAction { [weak self] _ in self?.closeWithAction { self?.onEdit?() } }, for: .touchUpInside)
+            editBtn.addAction(UIAction { [weak self] _ in self?.closeWithAction { self?.presenter.didSelectEdit() } }, for: .touchUpInside)
         }
         if let shareBtn = menuStackView.arrangedSubviews[1] as? UIButton {
-            shareBtn.addAction(UIAction { [weak self] _ in self?.closeWithAction { self?.onShare?() } }, for: .touchUpInside)
+            shareBtn.addAction(UIAction { [weak self] _ in self?.closeWithAction { self?.presenter.didSelectShare() } }, for: .touchUpInside)
         }
         if let deleteBtn = menuStackView.arrangedSubviews[2] as? UIButton {
-            deleteBtn.addAction(UIAction { [weak self] _ in self?.closeWithAction { self?.onDelete?() } }, for: .touchUpInside)
+            deleteBtn.addAction(UIAction { [weak self] _ in self?.closeWithAction { self?.presenter.didSelectDelete() } }, for: .touchUpInside)
         }
     }
     
@@ -135,7 +151,7 @@ private extension MenuViewController {
         UIView.animate(withDuration: 0.15, animations: {
             self.blurEffectView.alpha = 0
             self.menuStackView.alpha = 0
-            self.customEditView?.alpha = 0
+            self.taskCardView.alpha = 0
         }) { _ in
             self.dismiss(animated: true, completion: completion)
         }
@@ -145,7 +161,7 @@ private extension MenuViewController {
         UIView.animate(withDuration: 0.15, animations: {
             self.blurEffectView.alpha = 0
             self.menuStackView.alpha = 0
-            self.customEditView?.alpha = 0
+            self.taskCardView.alpha = 0
         }) { _ in
             self.dismiss(animated: true, completion: nil)
         }

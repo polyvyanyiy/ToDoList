@@ -73,56 +73,40 @@ extension OpenViewController {
         // Клик по ячейке в таблице
         windowView.onCellSelected = { [weak self] indexPath, currentModel, cellFrame in
             guard let self = self else { return }
+            // Точные координаты
+            let targetFrame = self.windowView.convert(cellFrame, to: self.view)
             
-            
-            
-            // Кастомная вью поверх экрана
-            let editView = EditTaskView()
-            editView.configure(with: currentModel)
-            editView.frame = cellFrame // берем размер всей ячейки
-            
-            // Меню
-            let menuVC = MenuViewController()
-            menuVC.customEditView = editView // Передаем нашу кастомную вью
-            menuVC.targetCellFrame = cellFrame
-            
-            // Настраиваем стили показа поверх экрана
-            self.definesPresentationContext = true
-            menuVC.modalPresentationStyle = .overFullScreen
-            menuVC.modalTransitionStyle = .crossDissolve
+            // Инициализируем Презентер меню
+            let menuPresenter = TaskMenuPresenter(taskModel: currentModel, targetCellFrame: targetFrame)
             
             // Обрабаботчик действия из меню
             // Редактирование
-            menuVC.onEdit = { [weak menuVC, weak self] in
+            menuPresenter.onEdit = { [weak self] in
                 guard let self = self else { return }
-                
-                let editVC = EditTaskViewController(item: currentModel, index: indexPath)
-                
+                // Презентер
+                let presenter = EditTaskPresenter(task: currentModel, index: indexPath)
                 // Отлавливаем изменения
-                editVC.onCellEdit = { [weak self] updatedTask, taskIndexPath in
+                presenter.onCellEdit = { [weak self] updatedTask, taskIndexPath in
                     guard let self = self else { return }
-//                    DispatchQueue.global(qos: .userInitiated).async {
-                        // Место для вычислений и работой CoreData
-                        
-                        // Обновления UI выносим на главный поток
-//                        DispatchQueue.main.async {
                     self.windowView.reloadRow(at: taskIndexPath)
-//                        }
-//                    }
                 }
+                
+                // Инициализируем контроллер через презентер
+                let editVC = EditTaskViewController(presenter: presenter)
+                
                 // Выполняем переход
-                menuVC?.dismiss(animated: true) {
+//                menuVC?.dismiss(animated: true) {
                     self.navigationController?.pushViewController(editVC, animated: true)
-                }
+//                }
             }
             
             // Поделится
-            menuVC.onShare = {
+            menuPresenter.onShare = {
                 print("Поделиться строкой: \(indexPath.row)")
             }
             
             // Удалить
-            menuVC.onDelete = { [weak self] in
+            menuPresenter.onDelete = { [weak self] in
                 guard let self = self else { return }
                 
                 DispatchQueue.global(qos: .userInitiated).async { [weak self] in
@@ -132,10 +116,15 @@ extension OpenViewController {
                     DispatchQueue.main.async {
                         guard let self = self else { return }
                         // Обновляем интерфейс
-                        self.windowView.deleteCell(for: currentModel)
+                        self.windowView.deleteCell(for: currentModel, isDelMenu: true)
                     }
                 }
             }
+            // Собираем контроллер меню
+            let menuVC = MenuViewController(presenter: menuPresenter)
+            // Настраиваем стили показа поверх экрана
+            menuVC.modalPresentationStyle = .overFullScreen
+            menuVC.modalTransitionStyle = .crossDissolve
             // Показ меню поверх экрана
             self.present(menuVC, animated: true, completion: nil)
         }
@@ -193,12 +182,16 @@ extension OpenViewController {
                 guard let self = self else { return }
                 // Создание объекта
                 let indexPath = IndexPath(row: 0, section: 0)
-                let editVC = EditTaskViewController(item: newTask, index: indexPath)
+                // Создаем презентер для новой задачи
+                let presenter = EditTaskPresenter(task: newTask, index: indexPath)
                 
-                editVC.onCellEdit = { [weak self] updatedTask, taskIndexPath in
+                presenter.onCellEdit = { [weak self] updatedTask, taskIndexPath in
                     guard let self = self else { return }
                     self.windowView.refreshDataFromDB()
                 }
+                
+                // Инициализируем контроллер через презентер
+                let editVC = EditTaskViewController(presenter: presenter)
                 
                 // Переход на окно с редактированием + новая задача
                 self.navigationController?.pushViewController(editVC, animated: true)
