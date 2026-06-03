@@ -38,6 +38,10 @@ final class ViewBuilder: UIView {
     let searchTextField = SearchTextField()
     private let botView = BottomView()
     
+    // переделал на DI
+    private let networkService = NetworkServiceWithAF()
+    private var viewModel: ViewModelServiceAA?
+    
     func configure() {
         
         setupViews()
@@ -105,28 +109,25 @@ extension ViewBuilder {
         }
         
         // Если локальная база пуста берем данные из сети
-        NetworkServiceWithAF.shared.fetchData { [weak self] result in
-            guard let self = self else { return }
-            
-            switch result {
-            case .success(let result):
-                result.todos.forEach { task in
-                    CoreDataManager.shared.createTask(Int16(task.id),
-                                                      title: "Новая задача",
-                                                      descTask: task.todo,
-                                                      beginDate: self.getTodayDateFormatter(),
-                                                      isCompleted: task.completed
-                    )
-                }
-                // После сохранения в базу — перечитываем актуальный массив
-                self.todoItems = CoreDataManager.shared.readAllTasks()
-                self.tableView.reloadData()
-                // Передаем в нижнее вью количество задач
-                self.botView.configure(with: self.todoItems.count)
-                
-            case .failure(let error):
-                print("Ошибка запроса данных: \(error)")
+        // переделал на DI
+        let viewModelStart = ViewModelServiceAA(protocolModel: networkService)
+        self.viewModel = viewModelStart
+        
+        Task {
+            try await viewModelStart.loadData()
+            viewModelStart.newDate?.todos.forEach { data in
+                CoreDataManager.shared.createTask(Int16(data.id),
+                                                  title: "Новая задача",
+                                                  descTask: data.todo,
+                                                  beginDate: self.getTodayDateFormatter(),
+                                                  isCompleted: data.completed
+                )
             }
+            // После сохранения в базу — перечитываем актуальный массив
+            self.todoItems = CoreDataManager.shared.readAllTasks()
+            self.tableView.reloadData()
+            // Передаем в нижнее вью количество задач
+            self.botView.configure(with: self.todoItems.count)
         }
     }
     
