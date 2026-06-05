@@ -27,4 +27,5 @@ CoreData:
 - частично архитектура VIPER (для галочки)
 
 GIF - демонстрация:
+
 <img width="480" height="960" alt="GitProgramTaskList" src="https://github.com/user-attachments/assets/99750305-7fd2-459a-8c30-faf145ab2717" />
